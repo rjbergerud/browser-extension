@@ -4,6 +4,7 @@ import * as util from './util';
 
 const CONTENT_TYPE_HTML = 'HTML';
 const CONTENT_TYPE_PDF = 'PDF';
+const CONTENT_TYPE_VITALSOURCE = 'VITALSOURCE';
 
 function toIIFEString(fn) {
   return '(' + fn.toString() + ')()';
@@ -100,6 +101,8 @@ export default function SidebarInjector(
   this.removeFromTab = function (tab) {
     if (isPDFViewerURL(tab.url)) {
       return removeFromPDF(tab);
+    } else if (isVitalSourceURL(tab.url)) {
+      return removeFromVitalSource(tab);
     } else {
       return removeFromHTML(tab);
     }
@@ -144,9 +147,17 @@ export default function SidebarInjector(
     }
   }
 
+  function isVitalSourceURL(url) {
+    return url.startsWith('https://bookshelf.vitalsource.com/');
+  }
+
   function detectTabContentType(tab) {
     if (isPDFViewerURL(tab.url)) {
       return Promise.resolve(CONTENT_TYPE_PDF);
+    }
+
+    if (isVitalSourceURL(tab.url)) {
+      return Promise.resolve(CONTENT_TYPE_VITALSOURCE);
     }
 
     return canInjectScript(tab.url).then(function (canInject) {
@@ -232,6 +243,8 @@ export default function SidebarInjector(
     return detectTabContentType(tab).then(function (type) {
       if (type === CONTENT_TYPE_PDF) {
         return injectIntoPDF(tab);
+      } else if (type === CONTENT_TYPE_VITALSOURCE) {
+        return injectIntoVitalSourceReader(tab, config);
       } else {
         return injectConfig(tab.id, config)
           .then(function () {
@@ -279,6 +292,44 @@ export default function SidebarInjector(
     return injectScript(tab.id, '/client/build/boot.js');
   }
 
+  async function getVitalSourceViewerFrame(tab) {
+    const getAllFrames = util.promisify(chrome.webNavigation.getAllFrames);
+    const frames = await getAllFrames({ tabId: tab.id });
+    for (let frame of frames) {
+      const frameURL = new URL(frame.url);
+      if (
+        frameURL.hostname !== 'jigsaw.vitalsource.com' ||
+        !frameURL.pathname.startsWith('/mosaic/wrapper.html')
+      ) {
+        continue;
+      }
+
+      return frame;
+    }
+    return null;
+  }
+
+  async function injectIntoVitalSourceReader(tab, config) {
+    const frame = await getVitalSourceViewerFrame(tab);
+    if (!frame) {
+      throw new Error('Book viewer frame not found');
+    }
+    await injectConfig(tab.id, config, { frameId: frame.frameId });
+    await injectScript(tab.id, '/client/build/boot.js', {
+      frameId: frame.frameId,
+    });
+  }
+
+  async function removeFromVitalSource(tab) {
+    const frame = await getVitalSourceViewerFrame(tab);
+    if (!frame) {
+      return;
+    }
+    return injectScript(tab.id, '/unload-client.js', {
+      frameId: frame.frameId,
+    });
+  }
+
   function removeFromPDF(tab) {
     return new Promise(function (resolve) {
       const parsedURL = new URL(tab.url);
@@ -316,8 +367,8 @@ export default function SidebarInjector(
    * Inject the script from the source file at `path` into the
    * page currently loaded in the tab at the given ID.
    */
-  function injectScript(tabId, path) {
-    return executeScriptFn(tabId, { file: path });
+  function injectScript(tabId, path, options = {}) {
+    return executeScriptFn(tabId, { file: path, ...options });
   }
 
   /**
@@ -327,7 +378,7 @@ export default function SidebarInjector(
    * A <meta> tag is used because that makes it available to JS content
    * running in isolated worlds.
    */
-  function injectConfig(tabId, config) {
+  function injectConfig(tabId, config, options = {}) {
     const configStr = JSON.stringify(config).replace(/"/g, '\\"');
     const configCode =
       'var hypothesisConfig = "' +
@@ -337,6 +388,6 @@ export default function SidebarInjector(
       addJSONScriptTagFn.toString() +
       ')' +
       '("js-hypothesis-config", hypothesisConfig);\n';
-    return executeScriptFn(tabId, { code: configCode });
+    return executeScriptFn(tabId, { code: configCode, ...options });
   }
 }
