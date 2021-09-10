@@ -7,8 +7,7 @@ import {
 } from './errors';
 import { promisify } from './util';
 
-const CONTENT_TYPE_HTML = 'HTML';
-const CONTENT_TYPE_PDF = 'PDF';
+/** @typedef {'HTML'|'PDF'} ContentType */
 
 /** @param {Function} fn */
 function toIIFEString(fn) {
@@ -148,20 +147,20 @@ export class SidebarInjector {
      */
     function guessContentTypeFromURL(url) {
       if (url.includes('.pdf')) {
-        return CONTENT_TYPE_PDF;
+        return 'PDF';
       } else {
-        return CONTENT_TYPE_HTML;
+        return 'HTML';
       }
     }
 
     /**
      * @param {chrome.tabs.Tab} tab
-     * @return {Promise<'HTML'|'PDF'>}
+     * @return {Promise<ContentType>}
      */
     async function detectTabContentType(tab) {
       const url = /** @type {string} */ (tab.url);
       if (isPDFViewerURL(url)) {
-        return CONTENT_TYPE_PDF;
+        return 'PDF';
       }
 
       const canInject = await canInjectScript(url);
@@ -216,7 +215,7 @@ export class SidebarInjector {
     /** @param {chrome.tabs.Tab} tab */
     async function injectIntoLocalDocument(tab) {
       const type = await detectTabContentType(tab);
-      if (type === CONTENT_TYPE_PDF) {
+      if (type === 'PDF') {
         return injectIntoLocalPDF(tab);
       } else {
         throw new LocalFileError('Local non-PDF files are not supported');
@@ -248,7 +247,7 @@ export class SidebarInjector {
       }
 
       const type = await detectTabContentType(tab);
-      if (type === CONTENT_TYPE_PDF) {
+      if (type === 'PDF') {
         await injectIntoPDF(tab);
       } else {
         await injectConfig(/** @type {number} */ (tab.id), config);
