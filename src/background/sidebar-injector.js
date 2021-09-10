@@ -94,13 +94,14 @@ export class SidebarInjector {
       }
     };
 
-    /* Removes the Hypothesis sidebar from the tab provided.
+    /**
+     * Removes the Hypothesis sidebar from the tab provided.
      *
      * @param {chrome.tabs.Tab} tab - Tab to remove the sidebar from.
      * @return {Promise<void>}
      */
     this.removeFromTab = tab => {
-      if (isPDFViewerURL(tab.url)) {
+      if (isPDFViewerURL(/** @type {string} */ (tab.url))) {
         return removeFromPDF(tab);
       } else {
         return removeFromHTML(tab);
@@ -325,11 +326,11 @@ export class SidebarInjector {
     }
 
     /** @param {chrome.tabs.Tab} tab */
-    function removeFromHTML(tab) {
+    async function removeFromHTML(tab) {
       if (!isSupportedURL(/** @type {string} */ (tab.url))) {
-        return Promise.resolve();
+        return;
       }
-      return executeScript(/** @type {number} */ (tab.id), {
+      await executeScript(/** @type {number} */ (tab.id), {
         file: '/unload-client.js',
       });
     }
