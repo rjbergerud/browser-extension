@@ -33,18 +33,17 @@ import TabStore from './tab-store';
  * @param {Object} services
  * @param {chrome.scripting} services.chrome.scripting
  * @param {chrome.tabs} services.chromeTabs
- * @param {chrome.extension} services.chromeExtension
+ * @param {chrome.runtime} services.chromeRuntime
  * @param {chrome.storage} services.chromeStorage
  * @param {chrome.browserAction} services.chromeAction
  * @param {(path: string) => string} services.extensionURL
  * @param {(cb: (allowed: boolean) => void) => void} services.isAllowedFileSchemeAccess
  */
 export default function HypothesisChromeExtension({
-  chromeStorage
+  chromeStorage,
   chromeScripting,
   chromeTabs,
-  chromeExtension,
-  chromeStorage,
+  chromeRuntime,
   chromeAction,
   extensionURL,
   isAllowedFileSchemeAccess,
@@ -113,15 +112,14 @@ export default function HypothesisChromeExtension({
   };
 
   async function restoreSavedTabState() {
-    chromeTabs.query({}, function (tabs) {
-      const tabIds = tabs
-        .filter(tab => tab.id !== undefined)
-        .map(({ id }) => /** @type {number} */ (id));
-      await store.reload(tabIds);
-      state.load(store.all());
-      tabIds.forEach(tabId => {
-        onTabStateChange(tabId, state.getState(tabId));
-      });
+    const tabs = await chromeTabs.query({})
+    const tabIds = tabs
+      .filter(tab => tab.id !== undefined)
+      .map(({ id }) => /** @type {number} */ (id));
+    await store.reload(tabIds);
+    state.load(store.all());
+    tabIds.forEach(tabId => {
+      onTabStateChange(tabId, state.getState(tabId));
     });
   }
 
@@ -131,7 +129,7 @@ export default function HypothesisChromeExtension({
    */
   async function onTabStateChange(tabId, current) {
     if (current) {
-      chromeTabs.get(tabId, tab => {
+      chromeTabs.get(tabId, async tab => {
         // This error is raised if the tab doesn't exist.
         if (chrome.runtime.lastError) {
           state.clearTab(tabId);
@@ -289,9 +287,9 @@ export default function HypothesisChromeExtension({
         // Note: Even though the sidebar app URL is correct here and the page
         // does load, Chrome devtools may incorrectly report that it failed to
         // load. See https://bugs.chromium.org/p/chromium/issues/detail?id=667533
-        assetRoot: chromeExtension.getURL('/client/'),
-        sidebarAppUrl: chromeExtension.getURL('/client/app.html'),
-        notebookAppUrl: chromeExtension.getURL('/client/notebook.html'),
+        assetRoot: chromeRuntime.getURL('/client/'),
+        sidebarAppUrl: chromeRuntime.getURL('/client/app.html'),
+        notebookAppUrl: chromeRuntime.getURL('/client/notebook.html'),
       };
 
       // Pass the direct-link query as configuration into the client.

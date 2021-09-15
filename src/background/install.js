@@ -4,16 +4,16 @@ let browserExtension;
 
 export function init() {
   browserExtension = new HypothesisChromeExtension({
-    chromeExtension: chrome.extension,
+    chromeRuntime: chrome.runtime,
     chromeScripting: chrome.scripting,
     chromeTabs: chrome.tabs,
     chromeAction: chrome.action,
     chromeStorage: chrome.storage,
     extensionURL: function (path) {
-      return chrome.extension.getURL(path);
+      return chrome.runtime.getURL(path);
     },
     isAllowedFileSchemeAccess: function (fn) {
-      return chrome.extension.isAllowedFileSchemeAccess(fn);
+      return chrome.runtime.isAllowedFileSchemeAccess(fn);
     },
   });
 
