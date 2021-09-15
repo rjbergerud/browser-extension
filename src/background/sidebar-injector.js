@@ -1,7 +1,6 @@
 import detectContentType from './detect-content-type';
 import * as errors from './errors';
 import * as util from './util';
-
 const CONTENT_TYPE_HTML = 'HTML';
 const CONTENT_TYPE_PDF = 'PDF';
 
@@ -12,8 +11,6 @@ function toIIFEString(fn) {
 /**
  * Adds a <script> tag containing JSON config data to the page.
  *
- * Note that this function is stringified and injected into the page via a
- * content script, so it cannot reference any external variables.
  */
 /* istanbul ignore next */
 function addJSONScriptTagFn(name, content) {
@@ -23,6 +20,7 @@ function addJSONScriptTagFn(name, content) {
   scriptTag.type = 'application/json';
   document.head.appendChild(scriptTag);
 }
+
 
 /**
  * Extract the value returned by a content script injected via
@@ -63,10 +61,11 @@ function extractContentScriptResult(result) {
  *   url. See: https://developer.chrome.com/extensions/extension#method-getURL
  */
 export default function SidebarInjector(
+  chromeScripting,
   chromeTabs,
   { isAllowedFileSchemeAccess, extensionURL }
 ) {
-  const executeScriptFn = util.promisify(chromeTabs.executeScript);
+  const executeScriptFn = chromeScripting;
 
   const PDFViewerBaseURL = extensionURL('/pdfjs/web/viewer.html');
 
@@ -152,7 +151,7 @@ export default function SidebarInjector(
     return canInjectScript(tab.url).then(function (canInject) {
       if (canInject) {
         return executeScriptFn(tab.id, {
-          code: toIIFEString(detectContentType),
+          file: 'detect-content-type.js'
         }).then(function (frameResults) {
           const result = extractContentScriptResult(frameResults);
           if (result) {
@@ -317,7 +316,7 @@ export default function SidebarInjector(
    * page currently loaded in the tab at the given ID.
    */
   function injectScript(tabId, path) {
-    return executeScriptFn(tabId, { file: path });
+    return executeScriptFn({ target: {tabId: tabId}, file: path });
   }
 
   /**
@@ -329,14 +328,6 @@ export default function SidebarInjector(
    */
   function injectConfig(tabId, config) {
     const configStr = JSON.stringify(config).replace(/"/g, '\\"');
-    const configCode =
-      'var hypothesisConfig = "' +
-      configStr +
-      '";\n' +
-      '(' +
-      addJSONScriptTagFn.toString() +
-      ')' +
-      '("js-hypothesis-config", hypothesisConfig);\n';
-    return executeScriptFn(tabId, { code: configCode });
+    return executeScriptFn({ target: {tabId: tabId}, func: addJSONScriptTagFn, args: ["js-hypothesis-config", configStr] });
   }
 }

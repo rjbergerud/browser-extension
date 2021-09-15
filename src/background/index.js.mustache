@@ -1,6 +1,6 @@
 import * as raven from './raven';
 
-let EXTENSION_CONFIG = {"buildType":"dev","apiUrl":"http://localhost:5000/api/","serviceUrl":"http://localhost:5000/","appType":"chrome-extension"};
+let EXTENSION_CONFIG = {{&settings}};
 
 // @ts-expect-error - `EXTENSION_CONFIG` is missing from types
 if (EXTENSION_CONFIG.raven) {

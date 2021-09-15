@@ -5,7 +5,7 @@
   {{#browserIsChrome}}
   "version_name": "{{ version }} ({{ versionName }})",
   {{/browserIsChrome}}
-  "manifest_version": 2,
+  "manifest_version": 3,
 
   {{#browserIsChrome}}
   "minimum_chrome_version": "64",
@@ -40,33 +40,31 @@
   {{/browserIsChrome}}
 
   "options_ui": {
-    "page": "options/index.html",
-    "chrome_style": true
+    "page": "options/index.html"
   },
 
   {{#browserIsChrome}}
   "offline_enabled": false,
   {{/browserIsChrome}}
 
-  "permissions": [
-    "<all_urls>",
-
-    "storage",
-    "tabs"
+  "host_permissions": [
+    "<all_urls>"    
   ],
 
-  "content_security_policy": "script-src 'self'; object-src 'self'",
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting"
+  ],
+
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
 
   "background": {
-    {{#browserIsChrome}}
-    "persistent": true,
-    {{/browserIsChrome}}
-    "scripts": [
-      "settings-data.js",
-      "extension.bundle.js"
-    ]
+    "service_worker": "extension.bundle.js"
   },
-  "browser_action": {
+  "action": {
     "default_icon": {
       "19": "images/browser-icon-inactive.png",
       "38": "images/browser-icon-inactive@2x.png"
@@ -79,10 +77,14 @@
   },
   {{/browserIsChrome}}
 
-  "web_accessible_resources": [
-    "client/*",
-    "help/*",
-    "pdfjs/*",
-    "pdfjs/web/viewer.html"
-  ]
+  "web_accessible_resources": [{
+    "resources": [
+      "client/*",
+      "help/*",
+      "pdfjs/*",
+      "pdfjs/web/viewer.html"
+    ],
+    "matches": [],
+    "extension_ids": []
+  }]
 }

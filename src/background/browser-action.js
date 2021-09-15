@@ -43,9 +43,9 @@ function _(str) {
  * a tab (whether the extension is active, annotation count) to
  * the badge state.
  *
- * @param {chrome.browserAction} chromeBrowserAction
+ * @param {chrome.browserAction} chromeAction
  */
-export default function BrowserAction(chromeBrowserAction) {
+export default function BrowserAction(chromeAction) {
   const buildType = settings.buildType;
 
   /**
@@ -99,7 +99,7 @@ export default function BrowserAction(chromeBrowserAction) {
     // update the badge style to reflect the build type
     const badgeTheme = badgeThemes[buildType];
     if (badgeTheme) {
-      chromeBrowserAction.setBadgeBackgroundColor({
+      chromeAction.setBadgeBackgroundColor({
         tabId: tabId,
         color: badgeTheme.color,
       });
@@ -108,9 +108,9 @@ export default function BrowserAction(chromeBrowserAction) {
       }
     }
 
-    chromeBrowserAction.setBadgeText({ tabId: tabId, text: badgeText });
-    chromeBrowserAction.setIcon({ tabId: tabId, path: activeIcon });
-    chromeBrowserAction.setTitle({ tabId: tabId, title: title });
+    chromeAction.setBadgeText({ tabId: tabId, text: badgeText });
+    chromeAction.setIcon({ tabId: tabId, path: activeIcon });
+    chromeAction.setTitle({ tabId: tabId, title: title });
   };
 }
 

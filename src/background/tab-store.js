@@ -17,19 +17,19 @@ export default function TabStore(storage) {
     return value;
   };
 
-  this.set = function (tabId, value) {
+  this.set = async function (tabId, value) {
     // copy across only the parts of the tab state that should
     // be preserved
     local[tabId] = {
       state: value.state,
       annotationCount: value.annotationCount,
     };
-    storage.setItem(key, JSON.stringify(local));
+    await storage.local.set({key: JSON.stringify(local)});
   };
 
-  this.unset = function (tabId) {
+  this.unset = async function (tabId) {
     delete local[tabId];
-    storage.setItem(key, JSON.stringify(local));
+    await storage.local.set({key: JSON.stringify(local)});
   };
 
   this.all = function () {
@@ -37,10 +37,11 @@ export default function TabStore(storage) {
   };
 
   /** @param {number[]} tabIds */
-  this.reload = tabIds => {
+  this.reload = async tabIds => {
     try {
       local = {};
-      const loaded = JSON.parse(storage.getItem(key));
+      let val = await storage.local.get([key])
+      const loaded = JSON.parse(val);
       tabIds.forEach(tabId => {
         const state = loaded[tabId];
         if (state) {

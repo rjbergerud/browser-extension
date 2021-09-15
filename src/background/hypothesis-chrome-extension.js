@@ -25,31 +25,35 @@ import TabStore from './tab-store';
  * application on startup.
  *
  * Relevant Chrome Extension documentation:
- * - https://developer.chrome.com/extensions/browserAction
+ * - https://developer.chrome.com/extensions/action
+ * - https://developer.chrome.com/docs/extensions/reference/scripting/
  * - https://developer.chrome.com/extensions/tabs
  * - https://developer.chrome.com/extensions/extension
  *
  * @param {Object} services
+ * @param {chrome.scripting} services.chrome.scripting
  * @param {chrome.tabs} services.chromeTabs
  * @param {chrome.extension} services.chromeExtension
  * @param {chrome.storage} services.chromeStorage
- * @param {chrome.browserAction} services.chromeBrowserAction
+ * @param {chrome.browserAction} services.chromeAction
  * @param {(path: string) => string} services.extensionURL
  * @param {(cb: (allowed: boolean) => void) => void} services.isAllowedFileSchemeAccess
  */
 export default function HypothesisChromeExtension({
+  chromeStorage
+  chromeScripting,
   chromeTabs,
   chromeExtension,
   chromeStorage,
-  chromeBrowserAction,
+  chromeAction,
   extensionURL,
   isAllowedFileSchemeAccess,
 }) {
   const help = new HelpPage(chromeTabs, extensionURL);
-  const store = new TabStore(localStorage);
+  const store = new TabStore(chromeStorage);
   const state = new TabState(store.all(), onTabStateChange);
-  const browserAction = new BrowserAction(chromeBrowserAction);
-  const sidebar = new SidebarInjector(chromeTabs, {
+  const browserAction = new BrowserAction(chromeAction);
+  const sidebar = new SidebarInjector(chromeScripting, chromeTabs, {
     extensionURL,
     isAllowedFileSchemeAccess,
   });
@@ -63,7 +67,7 @@ export default function HypothesisChromeExtension({
    * object to be passed so that it can listen for localStorage events.
    */
   this.listen = function () {
-    chromeBrowserAction.onClicked.addListener(onBrowserActionClicked);
+    chromeAction.onClicked.addListener(onBrowserActionClicked);
     chromeTabs.onCreated.addListener(onTabCreated);
 
     // when a user navigates within an existing tab,
@@ -108,12 +112,12 @@ export default function HypothesisChromeExtension({
     });
   };
 
-  function restoreSavedTabState() {
+  async function restoreSavedTabState() {
     chromeTabs.query({}, function (tabs) {
       const tabIds = tabs
         .filter(tab => tab.id !== undefined)
         .map(({ id }) => /** @type {number} */ (id));
-      store.reload(tabIds);
+      await store.reload(tabIds);
       state.load(store.all());
       tabIds.forEach(tabId => {
         onTabStateChange(tabId, state.getState(tabId));
@@ -125,7 +129,7 @@ export default function HypothesisChromeExtension({
    * @param {number} tabId
    * @param {import('./tab-state').State | undefined} current
    */
-  function onTabStateChange(tabId, current) {
+  async function onTabStateChange(tabId, current) {
     if (current) {
       chromeTabs.get(tabId, tab => {
         // This error is raised if the tab doesn't exist.
@@ -139,11 +143,11 @@ export default function HypothesisChromeExtension({
         updateTabDocument(tab);
 
         if (!state.isTabErrored(tabId)) {
-          store.set(tabId, current);
+          await store.set(tabId, current);
         }
       });
     } else {
-      store.unset(tabId);
+      await store.unset(tabId);
     }
   }
 

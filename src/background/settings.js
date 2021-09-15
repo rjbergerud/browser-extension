@@ -1,3 +1,5 @@
+import EXTENSION_CONFIG from '../settings-data';
+
 /**
  * Validate and normalize the given settings data.
  *
@@ -14,4 +16,4 @@ function normalizeSettings(settings) {
 /**
  * Returns the configuration object for the Chrome extension
  */
-export default normalizeSettings(/** @type {any} */ (window).EXTENSION_CONFIG);
+export default normalizeSettings(/** @type {any} */ EXTENSION_CONFIG);

@@ -5,8 +5,9 @@ let browserExtension;
 export function init() {
   browserExtension = new HypothesisChromeExtension({
     chromeExtension: chrome.extension,
+    chromeScripting: chrome.scripting,
     chromeTabs: chrome.tabs,
-    chromeBrowserAction: chrome.browserAction,
+    chromeAction: chrome.action,
     chromeStorage: chrome.storage,
     extensionURL: function (path) {
       return chrome.extension.getURL(path);
@@ -19,7 +20,7 @@ export function init() {
   browserExtension.listen();
 }
 
-// @ts-expect-error - `isFakeChrome` is missing from types.
+  // @ts-expect-error - `isFakeChrome` is missing from types.
 if (!chrome.isFakeChrome) {
   init();
 }
@@ -47,6 +48,8 @@ if (chrome.runtime.requestUpdateCheck) {
     chrome.runtime.onUpdateAvailable.addListener(onUpdateAvailable);
   });
 }
+
+
 
 function onInstalled(installDetails) {
   // The install reason can be "install", "update", "chrome_update", or

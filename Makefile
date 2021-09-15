@@ -49,14 +49,16 @@ build/.settings.json: force
 EXTENSION_SRC := pdfjs help images options
 
 .PHONY: extension
+extension: src/settings-data.js
+extension: src/background/settings.js
 extension: build/extension.bundle.js
 extension: build/manifest.json
 extension: build/client/build
 extension: build/client/app.html
 extension: build/client/notebook.html
-extension: build/settings-data.js
 extension: build/unload-client.js
 extension: build/pdfjs-init.js
+extension: build/detect-content-type.js
 extension: $(addprefix build/,$(EXTENSION_SRC))
 
 build/extension.bundle.js: src/background/index.js
@@ -82,9 +84,16 @@ build/client/app.html: src/sidebar-app.html.mustache build/client build/.setting
 	tools/template-context-app.js build/.settings.json | $(MUSTACHE) - $< >$@
 build/client/notebook.html: build/client/app.html
 	cp $< $@
-build/settings-data.js: src/settings-data.js.mustache build/client build/.settings.json
+src/background/index.js: src/background/index.js.mustache build/client build/.settings.json
 	tools/template-context-settings.js build/.settings.json | $(MUSTACHE) - $< >$@
+src/background/settings.js: src/settings-data.js
+
+src/settings-data.js: src/settings-data.js.mustache build/client build/.settings.json
+	tools/template-context-settings.js build/.settings.json | $(MUSTACHE) - $< >$@
+
 build/unload-client.js: src/unload-client.js
+	cp $< $@
+build/detect-content-type.js: src/background/detect-content-type.js
 	cp $< $@
 build/pdfjs-%.js: src/pdfjs-%.js
 	cp $< $@
