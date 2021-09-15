@@ -4,6 +4,7 @@ let browserExtension;
 
 export function init() {
   browserExtension = new HypothesisChromeExtension({
+    chrome: chrome,
     chromeRuntime: chrome.runtime,
     chromeScripting: chrome.scripting,
     chromeTabs: chrome.tabs,

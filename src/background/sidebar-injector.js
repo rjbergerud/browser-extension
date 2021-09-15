@@ -61,11 +61,11 @@ function extractContentScriptResult(result) {
  *   url. See: https://developer.chrome.com/extensions/extension#method-getURL
  */
 export default function SidebarInjector(
-  chromeScripting,
+  chrome,
   chromeTabs,
   { isAllowedFileSchemeAccess, extensionURL }
 ) {
-  const executeScriptFn = chromeScripting;
+  const executeScriptFn = chrome.scripting.executeScript;
 
   const PDFViewerBaseURL = extensionURL('/pdfjs/web/viewer.html');
 
@@ -151,7 +151,7 @@ export default function SidebarInjector(
     return canInjectScript(tab.url).then(function (canInject) {
       if (canInject) {
         return executeScriptFn(tab.id, {
-          file: 'detect-content-type.js'
+          files: ['detect-content-type.js']
         }).then(function (frameResults) {
           const result = extractContentScriptResult(frameResults);
           if (result) {
@@ -316,7 +316,7 @@ export default function SidebarInjector(
    * page currently loaded in the tab at the given ID.
    */
   function injectScript(tabId, path) {
-    return executeScriptFn({ target: {tabId: tabId}, file: path });
+    return executeScriptFn({ target: {tabId: tabId}, files: [path] });
   }
 
   /**

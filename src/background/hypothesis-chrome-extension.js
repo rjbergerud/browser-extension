@@ -40,6 +40,7 @@ import TabStore from './tab-store';
  * @param {(cb: (allowed: boolean) => void) => void} services.isAllowedFileSchemeAccess
  */
 export default function HypothesisChromeExtension({
+  chrome,
   chromeStorage,
   chromeScripting,
   chromeTabs,
@@ -52,7 +53,7 @@ export default function HypothesisChromeExtension({
   const store = new TabStore(chromeStorage);
   const state = new TabState(store.all(), onTabStateChange);
   const browserAction = new BrowserAction(chromeAction);
-  const sidebar = new SidebarInjector(chromeScripting, chromeTabs, {
+  const sidebar = new SidebarInjector(chrome, chromeTabs, {
     extensionURL,
     isAllowedFileSchemeAccess,
   });
